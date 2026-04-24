@@ -5,7 +5,7 @@ sys.path.append(r"D:\pharma_pipeline")
 from config.spark_session import get_spark_session
 from config.settings import SILVER_DIR, GOLD_DIR
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+from pyspark.sql import functions as F, Window
 
 def transform_to_gold(spark: SparkSession) -> None:
     silver_path = os.path.join(SILVER_DIR, "pharma_sales")
@@ -44,6 +44,14 @@ def transform_to_gold(spark: SparkSession) -> None:
     ).withColumn(
     "avg_unit_price", F.round("avg_unit_price", 2)
     )
+
+    wind_spec = Window.partitionBy("sale_year","sale_month").orderBy(F.desc("total_revenue"))
+    lag_spec = Window.partitionBy("product","subject_area").orderBy("sale_year","sale_month")
+
+    df_product_monthly = df_product_monthly\
+        .withColumn("revenue_rank", F.rank().over(wind_spec))\
+        .withColumn("prev_revenue", F.lag("total_revenue",1).over(lag_spec))\
+        .withColumn("revenue_change", F.round((F.col("total_revenue") - F.col("prev_revenue"))/F.col("prev_revenue")*100, 2))
 
     df_team_monthly = df_team_monthly.withColumn(
     "total_revenue", F.round("total_revenue", 2)
