@@ -6,6 +6,7 @@ import pandas as pd
 from prophet import Prophet
 import warnings
 warnings.filterwarnings("ignore")
+from pyspark.sql import SparkSession
 
 from config.spark_session import get_spark_session
 from config.settings import GOLD_DIR,OUTPUT_DIR
@@ -30,7 +31,9 @@ def prepare_prophet_df(spark_df, product_name: str)->pd.DataFrame:
         F.sum("total_revenue").alias("y")
     ).orderBy("ds")
 
-    return df.toPandas()
+    rows = df.collect()
+    return pd.DataFrame([(row["ds"], row["y"]) for row in rows], 
+                       columns=["ds", "y"])
 
 def train_and_forecast(pdf:pd.DataFrame, periods: int=6)->pd.DataFrame:
 
@@ -59,7 +62,6 @@ def run_forecasting()->None:
     spark = get_spark_session("ML_Forecasting")
     product_path = os.path.join(GOLD_DIR, "product_monthly")
     df = spark.read.parquet(product_path)
-
     products = [row["product"] for row in df.select("product").distinct().collect()]
     print(f"Forecasting for {len(products)} products:{products}")
 

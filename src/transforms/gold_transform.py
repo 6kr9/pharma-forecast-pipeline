@@ -62,9 +62,9 @@ def transform_to_gold(spark: SparkSession) -> None:
     product_path = os.path.join(GOLD_DIR, "product_monthly")
     team_path = os.path.join(GOLD_DIR, "team_monthly")
 
-    df_product_monthly.write\
-    .mode("overwrite")\
-    .partitionBy("category")\
+    df_product_monthly.write \
+    .mode("overwrite") \
+    .partitionBy("category") \
     .parquet(product_path)
 
     df_team_monthly.write \

@@ -1,4 +1,5 @@
 import sys
+import subprocess
 from src.ingestion.generate_data import generate_sales_data,save_raw_data
 from src.ingestion.bronze_ingestion import ingest_to_bronze
 from src.transforms.silver_transform import transform_to_silver
@@ -34,18 +35,22 @@ def run():
             print(f"failed at Silver : {e}")
             sys.exit(1)
 
-        print("\n── Step 3: Gold transform ──")
+        print("\n── Step 4: Gold transform ──")
         try:
             transform_to_gold(spark)
         except Exception as e:
             print(f"failed at Gold : {e}")
             sys.exit(1)
 
-        print("\n── Step 3: Forecasting ──")
+        print("\n── Step 5: Forecasting ──")
         try:
-            run_forecasting()
-        except Exception as e:
-            print(f"failed at forecasting : {e}")
+            result = subprocess.run(
+            [sys.executable, "src/ml/forecasting.py"],
+            cwd=r"D:\pharma_pipeline",
+            check=True
+    )
+        except subprocess.CalledProcessError as e:
+            print(f"failed at forecasting: {e}")
             sys.exit(1)
 
     finally:
