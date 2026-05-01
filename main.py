@@ -5,6 +5,7 @@ from src.ingestion.bronze_ingestion import ingest_to_bronze
 from src.transforms.silver_transform import transform_to_silver
 from src.transforms.gold_transform import transform_to_gold
 from src.ml.forecasting import run_forecasting
+from src.utils.s3_helper import upload_forecast_to_s3
 
 from config.spark_session import get_spark_session
 
@@ -52,6 +53,16 @@ def run():
         except subprocess.CalledProcessError as e:
             print(f"failed at forecasting: {e}")
             sys.exit(1)
+
+        print("\n── Step 6: Upload to S3 ──")
+        try:
+            upload_forecast_to_s3()
+            print("Forecast uploaded to S3")
+        except Exception as e:
+            print(f"Failed at S3 upload: {e}")
+            sys.exit(1)
+
+        print("\nPipeline completed successfully")
 
     finally:
         spark.stop()
